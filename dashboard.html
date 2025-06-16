@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnectPro - Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <h1>Welcome to ConnectPro</h1>
+    <h2 id="username"></h2>
+    <p><strong>Your Interests:</strong> <span id="userInterests"></span></p>
+    <button onclick="logout()" class="logout-btn">Logout</button>
+
+    <h3>Explore People with Similar Interests:</h3>
+    <div id="similarUsers" class="users-list">
+      <p>Loading similar users...</p>
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!user) {
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('username').innerText = `Hello, ${user.name}!`;
+      document.getElementById('userInterests').innerText = user.interests;
+
+      fetchSimilarUsers(user.email);
+    }
+
+    function fetchSimilarUsers(email) {
+      fetch(`http://localhost:3000/similar-users/${encodeURIComponent(email)}`)
+        .then(response => response.json())
+        .then(users => {
+          const container = document.getElementById('similarUsers');
+          container.innerHTML = '';
+
+          if (!Array.isArray(users) || users.length === 0) {
+            container.innerHTML = '<p>No similar users found yet.</p>';
+            return;
+          }
+
+          users.forEach(u => {
+            const userCard = document.createElement('div');
+            userCard.className = 'user-card';
+            userCard.innerHTML = `
+              <h4>${u.name}</h4>
+              <p><strong>Interests:</strong> ${u.interests}</p>
+              <button onclick="startChat('${u.email}', '${u.name}')">Start Chat</button>
+            `;
+            container.appendChild(userCard);
+          });
+        })
+        .catch(err => {
+          console.error('Error fetching users:', err);
+          document.getElementById('similarUsers').innerHTML = '<p>Failed to load users. Please try again later.</p>';
+        });
+    }
+
+    function startChat(friendEmail, friendName) {
+      window.location.href = `chat.html?friendEmail=${encodeURIComponent(friendEmail)}&friendName=${encodeURIComponent(friendName)}`;
+    }
+
+    function logout() {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

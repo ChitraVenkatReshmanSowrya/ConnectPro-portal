@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnectPro - Sign Up</title>
+  <link rel="stylesheet" href="signup.css">
+</head>
+<body>
+  <div class="form-container">
+    <h1>Sign Up for ConnectPro</h1>
+    <form id="signupForm">
+      <input type="text" placeholder="Full Name" name="name" required>
+      <input type="email" placeholder="Email" name="email" required>
+      <input type="password" placeholder="Password" name="password" required>
+      <textarea placeholder="Your Interests (e.g., coding, design, marketing)" name="interests" required></textarea>
+      <button type="submit" class="cta-btn">Sign Up</button>
+    </form>
+    <div class="loader" id="loader"></div>
+    <p>Already have an account? <a href="login.html">Log In</a></p>
+  </div>
+
+  <div id="successModal">
+    <div class="modal-content">
+      <h2>🎉 Registration Successful!</h2>
+      <p>Redirecting to login page...</p>
+    </div>
+  </div>
+
+  <script>
+    const signupForm = document.getElementById('signupForm');
+    const loader = document.getElementById('loader');
+    const successModal = document.getElementById('successModal');
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = signupForm.name.value;
+      const email = signupForm.email.value;
+      const password = signupForm.password.value;
+      const interests = signupForm.interests.value;
+
+      loader.style.display = 'block'; // Show loader
+
+      try {
+        const response = await fetch('http://localhost:3000/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, interests })
+        });
+
+        const data = await response.json();
+        loader.style.display = 'none'; // Hide loader
+
+        if (response.ok) {
+          successModal.style.display = 'flex'; // Show success modal
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000); // Redirect after 2 seconds
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        loader.style.display = 'none';
+        console.error('Error:', error);
+        alert('Something went wrong!');
+      }
+    });
+  </script>
+</body>
+</html>

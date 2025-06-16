@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnectPro - Chat</title>
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <div class="chat-container">
+    <h2 id="chat-title">Chat</h2>
+    <div id="chatMessages" class="chat-box">
+      <p>Loading chat...</p>
+    </div>
+    <div class="input-section">
+      <input type="text" id="messageInput" placeholder="Type your message..." onkeydown="checkEnter(event)" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <button onclick="backToDashboard()" class="back-btn">Back to Dashboard</button>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      window.location.href = 'login.html';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const friendEmail = params.get('friendEmail');
+    const friendName = params.get('friendName');
+
+    document.getElementById('chat-title').innerText = `Chat with ${friendName}`;
+
+    function loadMessages() {
+      fetch(`http://localhost:3000/get-messages?user1=${encodeURIComponent(user.email)}&user2=${encodeURIComponent(friendEmail)}`)
+        .then(response => response.json())
+        .then(messages => {
+          const chatBox = document.getElementById('chatMessages');
+          chatBox.innerHTML = messages.length === 0 ? '<p>No messages yet.</p>' : '';
+          
+          messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = msg.sender === user.email ? 'my-message' : 'friend-message';
+
+            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.innerHTML = `
+              <strong>${msg.sender === user.email ? 'You' : friendName}:</strong>
+              <span>${msg.message}</span>
+              <div class="timestamp">${time}</div>
+            `;
+            chatBox.appendChild(messageDiv);
+          });
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('chatMessages').innerHTML = '<p>Error loading messages.</p>';
+        });
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value.trim();
+      if (message.length === 0) return;
+
+      fetch('http://localhost:3000/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: user.email,
+          receiver: friendEmail,
+          message
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message === 'Message sent successfully') {
+          messageInput.value = '';
+          loadMessages();
+        }
+      })
+      .catch(err => console.error(err));
+    }
+
+    function checkEnter(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    function backToDashboard() {
+      window.location.href = 'dashboard.html';
+    }
+
+    // Initial load & auto-refresh
+    loadMessages();
+    setInterval(loadMessages, 3000);
+  </script>
+</body>
+</html>
